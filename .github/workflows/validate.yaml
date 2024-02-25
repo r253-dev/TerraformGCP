@@ -1,0 +1,22 @@
+name: Terraform Validator and Formatter
+on:
+  pull_request:
+    branches:
+      - "**"
+
+jobs:
+  validator_and_formatter:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: hashicorp/setup-terraform@v2
+
+      - run: terraform init
+
+      - run: terraform validate
+
+      - run: terraform fmt -diff -check -recursive
