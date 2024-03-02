@@ -70,15 +70,14 @@ resource "google_project_iam_binding" "github_actions_iam_workload_identity_user
   ]
 }
 
-# Artifact Registry
+# Artifact Registry; Development
 resource "google_artifact_registry_repository" "development" {
   project       = var.project
   location      = var.region
   repository_id = var.artifact_registry_repository_development
   format        = "DOCKER"
 }
-
-# Cloud Run
+# Cloud Run; Development
 resource "google_cloud_run_service" "cloudrun_service_development" {
   project  = var.project
   location = var.region
@@ -88,12 +87,8 @@ resource "google_cloud_run_service" "cloudrun_service_development" {
     spec {
       timeout_seconds = 30
       containers {
-        image = "${var.region}-docker.pkg.dev/${var.project}/${google_artifact_registry_repository.development.repository_id}/${var.container_name_development}"
-        startup_probe {
-          tcp_socket {
-            port = 3000
-          }
-        }
+        # image = "${var.region}-docker.pkg.dev/${var.project}/${google_artifact_registry_repository.development.repository_id}/${var.artifact_registry_repository_development}"
+        image = "us-docker.pkg.dev/cloudrun/container/hello"
       }
     }
   }
@@ -103,7 +98,7 @@ resource "google_cloud_run_service" "cloudrun_service_development" {
     latest_revision = true
   }
 }
-# no Auth
+# no Auth; Development
 data "google_iam_policy" "noauth" {
   binding {
     role = "roles/run.invoker"
@@ -112,10 +107,47 @@ data "google_iam_policy" "noauth" {
     ]
   }
 }
-resource "google_cloud_run_service_iam_policy" "noauth" {
+resource "google_cloud_run_service_iam_policy" "noauth_development" {
   location = google_cloud_run_service.cloudrun_service_development.location
   project  = google_cloud_run_service.cloudrun_service_development.project
   service  = google_cloud_run_service.cloudrun_service_development.name
+
+  policy_data = data.google_iam_policy.noauth.policy_data
+}
+
+# Artifact Registry; Production
+resource "google_artifact_registry_repository" "production" {
+  project       = var.project
+  location      = var.region
+  repository_id = var.artifact_registry_repository_production
+  format        = "DOCKER"
+}
+# Cloud Run; Production
+resource "google_cloud_run_service" "cloudrun_service_production" {
+  project  = var.project
+  location = var.region
+  name     = var.artifact_registry_repository_production
+
+  template {
+    spec {
+      timeout_seconds = 30
+      containers {
+        # image = "${var.region}-docker.pkg.dev/${var.project}/${google_artifact_registry_repository.production.repository_id}/${var.artifact_registry_repository_production}"
+        image = "us-docker.pkg.dev/cloudrun/container/hello"
+      }
+    }
+  }
+
+  traffic {
+    percent         = 100
+    latest_revision = true
+  }
+}
+# no Auth; Production
+resource "google_cloud_run_service_iam_policy" "noauth_production" {
+  location = google_cloud_run_service.cloudrun_service_production.location
+  project  = google_cloud_run_service.cloudrun_service_production.project
+  service  = google_cloud_run_service.cloudrun_service_production.name
 
   policy_data = data.google_iam_policy.noauth.policy_data
 }
