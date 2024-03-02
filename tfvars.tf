@@ -14,6 +14,6 @@ variable "zone" {
 variable "artifact_registry_repository_development" {
   default = "nest-development"
 }
-variable "container_name_development" {
-  default = "nest-dev"
+variable "artifact_registry_repository_production" {
+  default = "nest-production"
 }
