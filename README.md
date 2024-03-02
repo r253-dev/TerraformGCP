@@ -11,6 +11,8 @@ Enable the following APIs in the project.
 [Compute Engine API](https://console.cloud.google.com/apis/library/compute.googleapis.com)
 [Cloud Resource Manager API](https://console.cloud.google.com/apis/library/cloudresourcemanager.googleapis.com)
 [Service Networking API](https://console.cloud.google.com/apis/library/servicenetworking.googleapis.com)
+[Cloud Run API](https://console.cloud.google.com/apis/library/run.googleapis.com)
+[Identity and Access Management (IAM) API](https://console.cloud.google.com/apis/library/iam.googleapis.com)
 
 [Serverless VPC Access API](https://console.cloud.google.com/marketplace/product/google/vpcaccess.googleapis.com)
 [Cloud Build API](https://console.cloud.google.com/apis/library/cloudbuild.googleapis.com)
