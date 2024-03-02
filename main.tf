@@ -87,8 +87,12 @@ resource "google_cloud_run_service" "cloudrun_service_development" {
     spec {
       timeout_seconds = 30
       containers {
-        # image = "${var.region}-docker.pkg.dev/${var.project}/${google_artifact_registry_repository.development.repository_id}/${var.artifact_registry_repository_development}"
-        image = "us-docker.pkg.dev/cloudrun/container/hello"
+        image = "${var.region}-docker.pkg.dev/${var.project}/${google_artifact_registry_repository.development.repository_id}/${var.artifact_registry_repository_development}"
+        # image = "us-docker.pkg.dev/cloudrun/container/hello"
+        env {
+          name  = "NODE_ENV"
+          value = "development"
+        }
       }
     }
   }
@@ -132,8 +136,12 @@ resource "google_cloud_run_service" "cloudrun_service_production" {
     spec {
       timeout_seconds = 30
       containers {
-        # image = "${var.region}-docker.pkg.dev/${var.project}/${google_artifact_registry_repository.production.repository_id}/${var.artifact_registry_repository_production}"
-        image = "us-docker.pkg.dev/cloudrun/container/hello"
+        image = "${var.region}-docker.pkg.dev/${var.project}/${google_artifact_registry_repository.production.repository_id}/${var.artifact_registry_repository_production}"
+        # image = "us-docker.pkg.dev/cloudrun/container/hello"
+        env {
+          name  = "NODE_ENV"
+          value = "production"
+        }
       }
     }
   }
