@@ -93,6 +93,10 @@ resource "google_cloud_run_service" "cloudrun_service_development" {
           name  = "NODE_ENV"
           value = "development"
         }
+        env {
+          name  = "SERVICE_SITE_URL"
+          value = "https://dev.react.r253.dev/"
+        }
       }
     }
   }
@@ -141,6 +145,10 @@ resource "google_cloud_run_service" "cloudrun_service_production" {
         env {
           name  = "NODE_ENV"
           value = "production"
+        }
+        env {
+          name  = "SERVICE_SITE_URL"
+          value = "https://react.r253.dev/"
         }
       }
     }
