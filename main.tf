@@ -11,6 +11,12 @@ resource "google_compute_network" "development_app_network" {
   auto_create_subnetworks = false
   routing_mode            = "REGIONAL"
 }
+resource "google_compute_network" "production_app_network" {
+  project                 = var.project
+  name                    = "vpc-prod-app"
+  auto_create_subnetworks = false
+  routing_mode            = "REGIONAL"
+}
 
 # Subnet1
 resource "google_compute_subnetwork" "development" {
@@ -19,6 +25,13 @@ resource "google_compute_subnetwork" "development" {
   network       = google_compute_network.development_app_network.id
   name          = "dev"
   ip_cidr_range = "192.168.0.0/24"
+}
+resource "google_compute_subnetwork" "production" {
+  project       = var.project
+  region        = var.region
+  network       = google_compute_network.production_app_network.id
+  name          = "prod"
+  ip_cidr_range = "192.168.1.0/24"
 }
 
 # Service Networking
@@ -70,6 +83,52 @@ resource "google_project_iam_binding" "github_actions_iam_workload_identity_user
   ]
 }
 
+# Cloud SQL
+resource "google_sql_database_instance" "default" {
+  project             = var.project
+  region              = var.region
+  name                = var.cloud_sql_instance
+  database_version    = "MYSQL_8_0"
+  root_password       = "password"
+  deletion_protection = false
+  settings {
+    tier                  = "db-f1-micro" # development, production: db-custom-1-3840
+    disk_type             = "PD_HDD"
+    disk_size             = 10
+    disk_autoresize       = true
+    disk_autoresize_limit = 50
+    availability_type     = "ZONAL" # development
+    ip_configuration {
+      ipv4_enabled    = false
+      private_network = google_compute_network.development_app_network.id
+    }
+  }
+}
+resource "google_sql_database" "development" {
+  project   = var.project
+  name      = var.cloud_sql_database_development
+  instance  = google_sql_database_instance.default.name
+  charset   = "utf8mb4"
+  collation = "utf8mb4_general_ci"
+}
+resource "google_sql_user" "development" {
+  instance = google_sql_database_instance.default.name
+  name     = var.cloud_sql_database_development
+  password = var.cloud_sql_database_development
+}
+resource "google_sql_database" "production" {
+  project   = var.project
+  name      = var.cloud_sql_database_production
+  instance  = google_sql_database_instance.default.name
+  charset   = "utf8mb4"
+  collation = "utf8mb4_general_ci"
+}
+resource "google_sql_user" "production" {
+  instance = google_sql_database_instance.default.name
+  name     = var.cloud_sql_database_production
+  password = var.cloud_sql_database_production
+}
+
 # Artifact Registry; Development
 resource "google_artifact_registry_repository" "development" {
   project       = var.project
@@ -97,6 +156,35 @@ resource "google_cloud_run_service" "cloudrun_service_development" {
           name  = "SERVICE_SITE_URL"
           value = "https://dev.react.r253.dev/"
         }
+        env {
+          name  = "DB_HOST"
+          value = google_sql_database_instance.default.private_ip_address
+        }
+        env {
+          name  = "DATABASE"
+          value = var.cloud_sql_database_development
+        }
+        env {
+          name  = "DB_USER"
+          value = var.cloud_sql_database_development
+        }
+        env {
+          name  = "DB_PASS"
+          value = var.cloud_sql_database_development
+        }
+      }
+    }
+    metadata {
+      annotations = {
+        "run.googleapis.com/network-interfaces" = jsonencode([{
+          network    = google_compute_network.development_app_network.name
+          subnetwork = google_compute_subnetwork.development.name
+        }])
+        "run.googleapis.com/vpc-access-egress" = "private-ranges-only"
+        # 指定しないとdiffに出てくるので仕方なく指定
+        "run.googleapis.com/client-name"       = "gcloud"
+        "run.googleapis.com/client-version"    = "466.0.0"
+        "run.googleapis.com/startup-cpu-boost" = false
       }
     }
   }
@@ -150,6 +238,35 @@ resource "google_cloud_run_service" "cloudrun_service_production" {
           name  = "SERVICE_SITE_URL"
           value = "https://react.r253.dev/"
         }
+        env {
+          name  = "DB_HOST"
+          value = google_sql_database_instance.default.private_ip_address
+        }
+        env {
+          name  = "DATABASE"
+          value = var.cloud_sql_database_production
+        }
+        env {
+          name  = "DB_USER"
+          value = var.cloud_sql_database_production
+        }
+        env {
+          name  = "DB_PASS"
+          value = var.cloud_sql_database_production
+        }
+      }
+    }
+    metadata {
+      annotations = {
+        "run.googleapis.com/network-interfaces" = jsonencode([{
+          network    = google_compute_network.development_app_network.name
+          subnetwork = google_compute_subnetwork.development.name
+        }])
+        "run.googleapis.com/vpc-access-egress" = "private-ranges-only"
+        # 指定しないとdiffに出てくるので仕方なく指定
+        "run.googleapis.com/client-name"       = "gcloud"
+        "run.googleapis.com/client-version"    = "466.0.0"
+        "run.googleapis.com/startup-cpu-boost" = false
       }
     }
   }

@@ -11,6 +11,15 @@ variable "region" {
 variable "zone" {
   default = "asia-northeast2-c"
 }
+variable "cloud_sql_instance" {
+  default = "nest"
+}
+variable "cloud_sql_database_development" {
+  default = "nest_development"
+}
+variable "cloud_sql_database_production" {
+  default = "nest_production"
+}
 variable "artifact_registry_repository_development" {
   default = "nest-development"
 }
