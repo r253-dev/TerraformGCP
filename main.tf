@@ -4,6 +4,144 @@ provider "google" {
   region      = var.region
 }
 
+resource "google_secret_manager_secret" "database_development" {
+  secret_id = "database_development"
+
+  labels = {
+    label = "development"
+  }
+
+  replication {
+    user_managed {
+      replicas {
+        location = "asia-northeast2"
+      }
+    }
+  }
+}
+
+resource "google_secret_manager_secret" "db_host_development" {
+  secret_id = "db_host_development"
+
+  labels = {
+    label = "development"
+  }
+
+  replication {
+    user_managed {
+      replicas {
+        location = "asia-northeast2"
+      }
+    }
+  }
+}
+resource "google_secret_manager_secret_version" "db_host_development" {
+  secret = google_secret_manager_secret.db_host_development.id
+
+  secret_data = google_sql_database_instance.default.private_ip_address
+}
+
+resource "google_secret_manager_secret" "db_user_development" {
+  secret_id = "db_user_development"
+
+  labels = {
+    label = "development"
+  }
+
+  replication {
+    user_managed {
+      replicas {
+        location = "asia-northeast2"
+      }
+    }
+  }
+}
+
+resource "google_secret_manager_secret" "db_pass_development" {
+  secret_id = "db_pass_development"
+
+  labels = {
+    label = "development"
+  }
+
+  replication {
+    user_managed {
+      replicas {
+        location = "asia-northeast2"
+      }
+    }
+  }
+}
+
+resource "google_secret_manager_secret" "database_production" {
+  secret_id = "database_production"
+
+  labels = {
+    label = "production"
+  }
+
+  replication {
+    user_managed {
+      replicas {
+        location = "asia-northeast2"
+      }
+    }
+  }
+}
+
+resource "google_secret_manager_secret" "db_host_production" {
+  secret_id = "db_host_production"
+
+  labels = {
+    label = "production"
+  }
+
+  replication {
+    user_managed {
+      replicas {
+        location = "asia-northeast2"
+      }
+    }
+  }
+}
+resource "google_secret_manager_secret_version" "db_host_production" {
+  secret = google_secret_manager_secret.db_host_production.id
+
+  secret_data = google_sql_database_instance.default.private_ip_address
+}
+
+resource "google_secret_manager_secret" "db_user_production" {
+  secret_id = "db_user_production"
+
+  labels = {
+    label = "production"
+  }
+
+  replication {
+    user_managed {
+      replicas {
+        location = "asia-northeast2"
+      }
+    }
+  }
+}
+
+resource "google_secret_manager_secret" "db_pass_production" {
+  secret_id = "db_pass_production"
+
+  labels = {
+    label = "production"
+  }
+
+  replication {
+    user_managed {
+      replicas {
+        location = "asia-northeast2"
+      }
+    }
+  }
+}
+
 # VPC
 resource "google_compute_network" "development_app_network" {
   project                 = var.project
@@ -157,20 +295,40 @@ resource "google_cloud_run_service" "cloudrun_service_development" {
           value = "https://dev.react.r253.dev/"
         }
         env {
-          name  = "DB_HOST"
-          value = google_sql_database_instance.default.private_ip_address
+          name = "DB_HOST"
+          value_from {
+            secret_key_ref {
+              key  = "latest"
+              name = google_secret_manager_secret.db_host_development.secret_id
+            }
+          }
         }
         env {
-          name  = "DATABASE"
-          value = var.cloud_sql_database_development
+          name = "DATABASE"
+          value_from {
+            secret_key_ref {
+              key  = "latest"
+              name = google_secret_manager_secret.database_development.secret_id
+            }
+          }
         }
         env {
-          name  = "DB_USER"
-          value = var.cloud_sql_database_development
+          name = "DB_USER"
+          value_from {
+            secret_key_ref {
+              key  = "latest"
+              name = google_secret_manager_secret.db_user_development.secret_id
+            }
+          }
         }
         env {
-          name  = "DB_PASS"
-          value = var.cloud_sql_database_development
+          name = "DB_PASS"
+          value_from {
+            secret_key_ref {
+              key  = "latest"
+              name = google_secret_manager_secret.db_pass_development.secret_id
+            }
+          }
         }
       }
     }
@@ -239,20 +397,40 @@ resource "google_cloud_run_service" "cloudrun_service_production" {
           value = "https://react.r253.dev/"
         }
         env {
-          name  = "DB_HOST"
-          value = google_sql_database_instance.default.private_ip_address
+          name = "DB_HOST"
+          value_from {
+            secret_key_ref {
+              key  = "latest"
+              name = google_secret_manager_secret.db_host_production.secret_id
+            }
+          }
         }
         env {
-          name  = "DATABASE"
-          value = var.cloud_sql_database_production
+          name = "DATABASE"
+          value_from {
+            secret_key_ref {
+              key  = "latest"
+              name = google_secret_manager_secret.database_production.secret_id
+            }
+          }
         }
         env {
-          name  = "DB_USER"
-          value = var.cloud_sql_database_production
+          name = "DB_USER"
+          value_from {
+            secret_key_ref {
+              key  = "latest"
+              name = google_secret_manager_secret.db_user_production.secret_id
+            }
+          }
         }
         env {
-          name  = "DB_PASS"
-          value = var.cloud_sql_database_production
+          name = "DB_PASS"
+          value_from {
+            secret_key_ref {
+              key  = "latest"
+              name = google_secret_manager_secret.db_pass_production.secret_id
+            }
+          }
         }
       }
     }

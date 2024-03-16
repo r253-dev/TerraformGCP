@@ -14,6 +14,7 @@ Enable the following APIs in the project.
 [Cloud Run API](https://console.cloud.google.com/apis/library/run.googleapis.com)
 [Identity and Access Management (IAM) API](https://console.cloud.google.com/apis/library/iam.googleapis.com)
 [Cloud SQL Admin API](https://console.cloud.google.com/apis/library/sqladmin.googleapis.com)
+[Secret Manager API](https://console.cloud.google.com/apis/library/secretmanager.googleapis.com)
 
 [Serverless VPC Access API](https://console.cloud.google.com/marketplace/product/google/vpcaccess.googleapis.com)
 [Cloud Build API](https://console.cloud.google.com/apis/library/cloudbuild.googleapis.com)
