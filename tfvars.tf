@@ -11,6 +11,12 @@ variable "region" {
 variable "zone" {
   default = "asia-northeast2-c"
 }
+variable "cloud_run_service_name_development" {
+  default = "nest-development"
+}
+variable "cloud_run_service_name_production" {
+  default = "nest-production"
+}
 variable "cloud_sql_instance" {
   default = "nest"
 }
