@@ -73,6 +73,22 @@ resource "google_secret_manager_secret" "db_pass_development" {
   }
 }
 
+resource "google_secret_manager_secret" "db_admin_url_development" {
+  secret_id = "db_admin_url_development"
+
+  labels = {
+    label = "development"
+  }
+
+  replication {
+    user_managed {
+      replicas {
+        location = "asia-northeast2"
+      }
+    }
+  }
+}
+
 resource "google_secret_manager_secret" "database_production" {
   secret_id = "database_production"
 
@@ -128,6 +144,22 @@ resource "google_secret_manager_secret" "db_user_production" {
 
 resource "google_secret_manager_secret" "db_pass_production" {
   secret_id = "db_pass_production"
+
+  labels = {
+    label = "production"
+  }
+
+  replication {
+    user_managed {
+      replicas {
+        location = "asia-northeast2"
+      }
+    }
+  }
+}
+
+resource "google_secret_manager_secret" "db_admin_url_production" {
+  secret_id = "db_admin_url_production"
 
   labels = {
     label = "production"
@@ -278,7 +310,7 @@ resource "google_artifact_registry_repository" "development" {
 resource "google_cloud_run_service" "cloudrun_service_development" {
   project  = var.project
   location = var.region
-  name     = var.artifact_registry_repository_development
+  name     = var.cloud_run_service_name_development
 
   template {
     spec {
@@ -341,7 +373,7 @@ resource "google_cloud_run_service" "cloudrun_service_development" {
         "run.googleapis.com/vpc-access-egress" = "private-ranges-only"
         # 指定しないとdiffに出てくるので仕方なく指定
         "run.googleapis.com/client-name"       = "gcloud"
-        "run.googleapis.com/client-version"    = "466.0.0"
+        "run.googleapis.com/client-version"    = "468.0.0"
         "run.googleapis.com/startup-cpu-boost" = false
       }
     }
@@ -368,6 +400,38 @@ resource "google_cloud_run_service_iam_policy" "noauth_development" {
 
   policy_data = data.google_iam_policy.noauth.policy_data
 }
+resource "google_cloud_run_v2_job" "development" {
+  name         = "migrate-${var.cloud_run_service_name_development}"
+  location     = var.region
+  launch_stage = "BETA"
+
+  template {
+    template {
+      max_retries = 1
+      containers {
+        image   = "${var.region}-docker.pkg.dev/${var.project}/${google_artifact_registry_repository.development.repository_id}/migrate-${var.cloud_run_service_name_development}"
+        command = ["npm"]
+        args    = ["run", "db:migrate"]
+        env {
+          name = "RDB_MIGRATION_URL"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.db_admin_url_development.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      vpc_access {
+        network_interfaces {
+          network    = google_compute_network.development_app_network.name
+          subnetwork = google_compute_subnetwork.development.name
+        }
+        egress = "PRIVATE_RANGES_ONLY"
+      }
+    }
+  }
+}
 
 # Artifact Registry; Production
 resource "google_artifact_registry_repository" "production" {
@@ -380,7 +444,7 @@ resource "google_artifact_registry_repository" "production" {
 resource "google_cloud_run_service" "cloudrun_service_production" {
   project  = var.project
   location = var.region
-  name     = var.artifact_registry_repository_production
+  name     = var.cloud_run_service_name_production
 
   template {
     spec {
@@ -442,8 +506,7 @@ resource "google_cloud_run_service" "cloudrun_service_production" {
         }])
         "run.googleapis.com/vpc-access-egress" = "private-ranges-only"
         # 指定しないとdiffに出てくるので仕方なく指定
-        "run.googleapis.com/client-name"       = "gcloud"
-        "run.googleapis.com/client-version"    = "466.0.0"
+        "run.googleapis.com/client-name"       = "cloud-console"
         "run.googleapis.com/startup-cpu-boost" = false
       }
     }
@@ -461,4 +524,36 @@ resource "google_cloud_run_service_iam_policy" "noauth_production" {
   service  = google_cloud_run_service.cloudrun_service_production.name
 
   policy_data = data.google_iam_policy.noauth.policy_data
+}
+resource "google_cloud_run_v2_job" "production" {
+  name         = "migrate-${var.cloud_run_service_name_production}"
+  location     = var.region
+  launch_stage = "BETA"
+
+  template {
+    template {
+      max_retries = 1
+      containers {
+        image   = "${var.region}-docker.pkg.dev/${var.project}/${google_artifact_registry_repository.production.repository_id}/migrate-${var.cloud_run_service_name_production}"
+        command = ["npm"]
+        args    = ["run", "db:migrate"]
+        env {
+          name = "RDB_MIGRATION_URL"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.db_admin_url_production.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      vpc_access {
+        network_interfaces {
+          network    = google_compute_network.development_app_network.name
+          subnetwork = google_compute_subnetwork.development.name
+        }
+        egress = "PRIVATE_RANGES_ONLY"
+      }
+    }
+  }
 }
